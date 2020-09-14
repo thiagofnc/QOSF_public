@@ -1,0 +1,85 @@
+%matplotlib inline
+# Importing standard Qiskit libraries and configuring account
+from qiskit import QuantumCircuit, execute, Aer, IBMQ
+from qiskit.compiler import transpile, assemble
+from qiskit.tools.jupyter import *
+from qiskit.visualization import *
+# Loading your IBM Q account(s)
+provider = IBMQ.load_account()
+
+import matplotlib.pyplot as plt
+from numpy import *
+circuit = QuantumCircuit(2, 2)
+backend = Aer.get_backend('statevector_simulator')
+
+circuit.ry(pi/2, 0)
+circuit.cx(0, 1)
+circuit.rx(pi, 1)
+
+result = execute(circuit, backend, shots=100).result()
+expec_statevector = result.get_statevector(circuit)
+expec_statevector = [0, 0.70710678118, 0.70710678118, 0]
+
+import random
+circuit = QuantumCircuit(2, 2)
+backend = Aer.get_backend('statevector_simulator')
+
+
+teta1 = random.uniform(0, pi)
+teta2 = random.uniform(0, pi)
+
+circuit.ry(teta1, 0)
+circuit.cx(0, 1)
+circuit.rx(teta2, 1)
+
+result = execute(circuit, backend, shots=100).result()
+statevector = result.get_statevector(circuit)
+plot_state_city(statevector, title = 'Initial Statevector')
+
+iteration = 1
+errors = []
+iterations = []
+while iteration < 5000:
+    learning_rate = 0.02
+    error_a = ((statevector[0]**2).real - (expec_statevector[0]**2).real)
+    error_b = ((statevector[1]**2).real - (expec_statevector[1]**2).real)
+    error_c = ((statevector[2]**2).real - (expec_statevector[2]**2).real)
+    error_d = ((statevector[3]**2).real - (expec_statevector[3]**2).real)
+    
+    total_error = (error_a + error_b + error_c + error_d)
+    new_teta1 = (teta1 - total_error*learning_rate)
+    errors.append(total_error)
+    iterations.append(iteration)
+    teta1 = new_teta1
+    circuit = QuantumCircuit(2,2)
+    backend = Aer.get_backend('statevector_simulator')
+    
+    circuit.ry(teta1, 0)
+    circuit.cx(0, 1)
+    circuit.rx(teta2, 1)
+    result = execute(circuit, backend, shots=100).result()
+    statevector_iter = result.get_statevector(circuit)
+    errors.append(total_error)
+    iterations.append(iteration)
+    iteration += 1
+    statevector = statevector_iter
+    if statevector_iter[0 and 1 and 2 and 3] != expec_statevector[0 and 1 and 2 and 3]:
+        new_teta2 = (teta2 - total_error*learning_rate)
+        teta2 = new_teta2
+        
+        circuit = QuantumCircuit(2,2)
+        backend = Aer.get_backend('statevector_simulator')
+    
+        circuit.ry(teta1, 0)
+        circuit.cx(0, 1)
+        circuit.rx(teta2, 1)
+        result = execute(circuit, backend, shots=100).result()
+        statevector_iter = result.get_statevector(circuit)
+        iteration += 1
+        errors.append(total_error)
+        iterations.append(iteration)
+        statevector = statevector_iter
+else:
+    plt.figure(figsize(9, 3))
+    plt.plot(iterations, errors)
+    plt.show()
